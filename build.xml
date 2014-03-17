@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="AsciiCheck" basedir="." default="compress">
+
+	<property name="src.dir" value="src"/>
+	<property name="bin.dir" value="bin"/>
+	<property name="res.dir" value="res"/>
+	<property name="out.dir" value="out"/>
+	<property name="zip.dir" value="${out.dir}/zip"/>
+	<property name="out.name" value="${out.dir}/${ant.project.name}"/>
+
+	<property name="strict-clean" value="true"/>
+	<property name="main-class" value="gui.EntryPoint"/>
+
+	<target name="clean">
+		<delete failonerror="${strict-clean}" dir="${bin.dir}"/>
+		<delete failonerror="${strict-clean}" dir="${out.dir}"/>
+	</target>
+
+	<target name="build" depends="clean">
+		<mkdir dir="${bin.dir}"/>
+		<javac srcdir="${src.dir}" destdir="${bin.dir}"/>
+
+		<copy todir="${bin.dir}\${res.dir}">
+			<fileset dir="${res.dir}"/>
+		</copy>
+	</target>
+
+	<target name="compress" depends="build">
+		<mkdir dir="${out.dir}"/>
+
+		<jar destfile="${out.name}.jar" basedir="${bin.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main-class}"/>
+				<attribute name="Sealed" value="true"/>
+			</manifest>
+		</jar>
+		<length file="${out.name}.jar" property="out.jar.length"/>
+		<echo message="Jar size: ${out.jar.length} bytes"/>
+	</target>
+
+	<target name="recompress" depends="compress">
+		<mkdir dir="${zip.dir}"/>
+		<unzip src="${out.name}.jar" dest="${zip.dir}"/>
+		<delete failonerror="${strict-clean}" file="${out.name}.jar"/>
+
+		<exec executable="kzip" dir="${zip.dir}">
+		    <arg value="-r"/>
+		    <arg value="../../${out.name}.zip"/>
+		    <arg value="*"/>
+		</exec>
+		<delete failonerror="${strict-clean}" dir="${zip.dir}"/>
+
+		<move file="${out.name}.zip" tofile="${out.name}.jar"/>
+		<length file="${out.name}.jar" property="out.zip.length"/>
+		<echo message="KZip jar size: ${out.zip.length} bytes"/>
+	</target>
+
+	<target name="run" depends="compress">
+		<java jar="${out.name}.jar" fork="true">
+			<jvmarg value="-Xms64m"/>
+			<jvmarg value="-Xmx64m"/>
+		</java>
+	</target>
+
+</project>
